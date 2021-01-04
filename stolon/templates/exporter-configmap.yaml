@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "stolon.exporter.fullname" . }}
+  labels:
+    app: {{ template "stolon.name" . }}
+    chart: {{ template "stolon.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  config.yaml: |
+{{ printf .Values.exporter.config.queries | indent 4 }}

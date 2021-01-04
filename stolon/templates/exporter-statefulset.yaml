@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ template "stolon.exporter.fullname" . }}
+  labels:
+    app: {{ template "stolon.name" . }}
+    chart: {{ template "stolon.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.exporter.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "stolon.name" . }}
+      release: {{ .Release.Name }}
+      component: stolon-exporter
+  template:
+    metadata:
+      labels:
+        app: {{ template "stolon.name" . }}
+        release: {{ .Release.Name }}
+{{- with .Values.exporter.podLabels }}
+{{ toYaml . | trim | indent 8 }}
+{{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/exporter-configmap.yaml") . | sha256sum }}
+{{- with .Values.exporter.annotations }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+    spec:
+      serviceAccountName: {{ template "stolon.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          args:
+          - "--extend.query-path=/etc/config.yaml"
+          {{- if .Values.exporter.config.disableDefaultMetrics }}
+          - "--disable-default-metrics"
+          {{- end }}
+          {{- if .Values.exporter.config.disableSettingsMetrics }}
+          - "--disable-settings-metrics"
+          {{- end }}
+          {{- if .Values.exporter.config.autoDiscoverDatabases }}
+          - "--auto-discover-databases"
+          {{- if .Values.exporter.config.excludeDatabases }}
+          - "--exclude-databases"
+          - {{ .Values.exporter.config.excludeDatabases | join "," }}
+          {{- end }}
+          {{- end }}
+          env:
+          - name: DATA_SOURCE_URI
+            value: {{ template "stolon.fullname" . }}-proxy.{{ .Release.Namespace }}
+          - name: DATA_SOURCE_USER
+            value: {{ .Values.superuserUsername | quote }}
+          - name: DATA_SOURCE_PASS
+            value: "/etc/secrets/stolon/pg_su_password"
+          image: "{{ .Values.exporter.image.repository }}:{{ .Values.exporter.image.tag }}"
+          imagePullPolicy: {{ .Values.exporter.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.exporter.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+{{ toYaml .Values.exporter.resources | indent 12 }}
+          volumeMounts:
+            - name: queries
+              mountPath: /etc/config.yaml
+              subPath: config.yaml
+      securityContext:
+{{ toYaml .Values.exporter.securityContext | indent 8 }}
+     {{- with .Values.exporter.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.exporter.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.exporter.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
