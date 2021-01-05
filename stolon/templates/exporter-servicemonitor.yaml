@@ -1,0 +1,47 @@
+{{- if .Values.exporter.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "stolon.fullname" . }}-exporter
+  namespace: {{ .Values.exporter.serviceMonitor.namespace }}
+  labels:
+  {{- if .Values.exporter.serviceMonitor.labels }}
+    {{ toYaml .Values.exporter.serviceMonitor.labels | nindent 4 }}
+  {{- else }}
+    app: {{ template "stolon.name" . }}
+    chart: {{ template "stolon.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  {{- end }}
+spec:
+  endpoints:
+  - port: {{ .Values.exporter.service.name }}
+{{- if .Values.exporter.serviceMonitor.interval }}
+    interval: {{ .Values.exporter.serviceMonitor.interval }}
+{{- end }}
+{{- if .Values.exporter.serviceMonitor.telemetryPath }}
+    path: {{ .Values.exporter.serviceMonitor.telemetryPath }}
+{{- end }}
+{{- if .Values.exporter.serviceMonitor.timeout }}
+    scrapeTimeout: {{ .Values.exporter.serviceMonitor.timeout }}
+{{- end }}
+{{- if .Values.exporter.serviceMonitor.metricRelabelings }}
+    metricRelabelings:
+{{ toYaml .Values.exporter.serviceMonitor.metricRelabelings | indent 4 }}
+{{- end }}
+  jobLabel: {{ template "stolon.fullname" . }}-exporter
+  namespaceSelector:
+    matchNames:
+    - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+      app: {{ template "stolon.name" . }}
+      release: {{ .Release.Name }}
+      component: stolon-exporter
+{{- if .Values.exporter.serviceMonitor.targetLabels }}
+  targetLabels:
+{{- range .Values.exporter.serviceMonitor.targetLabels }}
+  - {{ . }}
+{{- end }}
+{{- end }}
+{{- end }}

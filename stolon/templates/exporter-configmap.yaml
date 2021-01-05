@@ -1,7 +1,8 @@
+{{- if .Values.exporter.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ template "stolon.exporter.fullname" . }}
+  name: {{ template "stolon.fullname" . }}-exporter
   labels:
     app: {{ template "stolon.name" . }}
     chart: {{ template "stolon.chart" . }}
@@ -10,3 +11,4 @@ metadata:
 data:
   config.yaml: |
 {{ printf .Values.exporter.config.queries | indent 4 }}
+{{- end }}

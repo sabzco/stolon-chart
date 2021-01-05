@@ -1,7 +1,8 @@
+{{- if .Values.exporter.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "stolon.exporter.fullname" . }}
+  name: {{ template "stolon.fullname" . }}-exporter-headless
   {{- if .Values.exporter.service.annotations }}
   annotations:
 {{ toYaml .Values.exporter.service.annotations | indent 4 }}
@@ -15,7 +16,7 @@ metadata:
 {{ toYaml .Values.exporter.service.labels | trim | indent 4 }}
 {{- end }}
 spec:
-  type: {{ .Values.exporter.service.type }}
+  clusterIP: None
   ports:
     - port: {{ .Values.exporter.service.port }}
       targetPort: {{ .Values.exporter.service.targetPort }}
@@ -25,3 +26,4 @@ spec:
     app: {{ template "stolon.name" . }}
     release: {{ .Release.Name }}
     component: stolon-exporter
+  {{- end }}

@@ -1,14 +1,17 @@
+{{- if .Values.exporter.enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ template "stolon.exporter.fullname" . }}
+  name: {{ template "stolon.fullname" . }}-exporter
   labels:
     app: {{ template "stolon.name" . }}
     chart: {{ template "stolon.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.exporter.replicaCount }}
+  serviceName: {{ template "stolon.fullname" . }}-exporter
+  podManagementPolicy: Parallel
+  replicas: {{ .Values.keeper.replicaCount }}
   selector:
     matchLabels:
       app: {{ template "stolon.name" . }}
@@ -19,6 +22,8 @@ spec:
       labels:
         app: {{ template "stolon.name" . }}
         release: {{ .Release.Name }}
+        component: stolon-exporter
+        stolon-cluster: {{ template "stolon.fullname" . }}
 {{- with .Values.exporter.podLabels }}
 {{ toYaml . | trim | indent 8 }}
 {{- end }}
@@ -46,13 +51,23 @@ spec:
           - {{ .Values.exporter.config.excludeDatabases | join "," }}
           {{- end }}
           {{- end }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -ex
+              IFS='-' read -ra ADDR <<< "${POD_NAME}"
+              export DATA_SOURCE_URI={{ template "stolon.fullname" . }}-keeper-${ADDR[-1]}.{{ template "stolon.fullname" . }}-keeper-headless:5432/postgres?sslmode=disable
+              exec postgres_exporter
           env:
-          - name: DATA_SOURCE_URI
-            value: {{ template "stolon.fullname" . }}-proxy.{{ .Release.Namespace }}
           - name: DATA_SOURCE_USER
             value: {{ .Values.superuserUsername | quote }}
           - name: DATA_SOURCE_PASS
-            value: "/etc/secrets/stolon/pg_su_password"
+            value: {{ .Values.superuserPassword | quote }}
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           image: "{{ .Values.exporter.image.repository }}:{{ .Values.exporter.image.tag }}"
           imagePullPolicy: {{ .Values.exporter.image.pullPolicy }}
           ports:
@@ -87,3 +102,9 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
     {{- end }}
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: {{ template "stolon.fullname" . }}-exporter
+        name: queries
+{{- end }}

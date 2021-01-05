@@ -24,19 +24,12 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 {{- end -}}
 
-{{- define "stolon.exporter.fullname" -}}
-{{- $serviceName := default "exporter" .Values.exporter.nameOverride -}}
-{{- $name := default .Chart.Name .Values.nameOverride -}}
-{{- printf "%s-%s-%s" .Release.Name $name $serviceName | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
 {{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "stolon.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
-
 
 {{/* Create the name of the service account to use */}}
 {{- define "stolon.serviceAccountName" -}}
