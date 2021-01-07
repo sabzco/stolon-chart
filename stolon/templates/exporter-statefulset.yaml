@@ -58,7 +58,7 @@ spec:
               set -ex
               IFS='-' read -ra ADDR <<< "${POD_NAME}"
               export DATA_SOURCE_URI={{ template "stolon.fullname" . }}-keeper-${ADDR[-1]}.{{ template "stolon.fullname" . }}-keeper-headless:5432/postgres?sslmode=disable
-              exec postgres_exporter
+              exec postgres_exporter "${@}"
           env:
           - name: DATA_SOURCE_USER
             value: {{ .Values.superuserUsername | quote }}

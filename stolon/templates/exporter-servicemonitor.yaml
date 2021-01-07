@@ -15,7 +15,7 @@ metadata:
   {{- end }}
 spec:
   endpoints:
-  - port: {{ .Values.exporter.service.name }}
+  - targetPort: {{ .Values.exporter.service.name }}
 {{- if .Values.exporter.serviceMonitor.interval }}
     interval: {{ .Values.exporter.serviceMonitor.interval }}
 {{- end }}
@@ -29,7 +29,6 @@ spec:
     metricRelabelings:
 {{ toYaml .Values.exporter.serviceMonitor.metricRelabelings | indent 4 }}
 {{- end }}
-  jobLabel: {{ template "stolon.fullname" . }}-exporter
   namespaceSelector:
     matchNames:
     - {{ .Release.Namespace }}
